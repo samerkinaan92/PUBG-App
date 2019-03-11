@@ -1,0 +1,38 @@
+{
+    "manifest_version": 1,
+    "type": "WebApp",
+    "meta": {
+        "name": "PUBG live stats",
+        "version": "1.0",
+        "minimum-overwolf-version": "0.127.0.7",
+        "author": "Samer Kinaan",
+        "icon": "icon.png",
+        "icon_gray": "icon_gray.png",
+        "description": "PUBG live stats shows you live stats from your current PUBG match."
+    },
+    "permissions": ["Profile"],
+    "data": {
+        "game_targeting": {
+            "type": "dedicated",
+            "game_ids": [
+            10906
+            ]
+          },
+        "game_events":[10906],
+        "start_window": "MainWindow",
+        "windows": {
+            "MainWindow": {
+                "file": "Files/index.html",
+                "show_maximize": true,
+                "use_os_windowing": true,
+                "native_window": true,
+                "desktop_only": true,
+                "transparent": false,
+                "resizable": true,
+                "size": {"width": 1200, "height": 900},
+                "min_size": {"width": 200, "height": 200},
+                "max_size": {"width": 1200, "height": 900}
+            }
+        }
+    }
+}

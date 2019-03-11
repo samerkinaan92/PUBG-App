@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <script src="js\jquery-3.3.1.js"></script>
+  <title>Overwolf PUBG Sample App</title>
+  <script src="js\main.js" type="text/javascript" language="javascript"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body style="background-color:lightgrey;">
+  <header class="app-header" style="width:100%; height: 30px; background-color: gray;" draggable="true">
+    <span class="user-name" style="color: white; font-family:verdana; font-size:140%"></span>
+    <div class="window-controls-group" @mousedown.stop v-if="!closing">
+        <button class="window-control" @click="minimize">
+          <svg class="svg-icon-fill">
+            <use xlink:href="img/sprite.svg#window-control_minimize" />
+          </svg>
+        </button>
+  
+        <button class="window-control" @click="toggleMaximize">
+          <svg class="svg-icon-fill svg-icon-restore" v-if="maximized">
+            <use xlink:href="img/sprite.svg#window-control_restore" />
+          </svg>
+          <svg class="svg-icon-fill svg-icon-maximize" v-else>
+            <use xlink:href="img/sprite.svg#window-control_maximize" />
+          </svg>
+        </button>
+  
+        <button class="window-control window-control-close" onclick="closeWindow()">
+          <svg class="svg-icon-fill">
+            <use xlink:href="img/sprite.svg#window-control_close" />
+          </svg>
+        </button>
+      </div>
+  </header>
+  <p id="map">map:</p>
+  <p id="kills">kills: 0</p>
+  <p id="headshots">headshots: 0</p>
+  <p id="total_damage_dealt">total damage dealt: 0</p>
+  <p id="mode">mode:</p>
+  <p id="team">team:</p>
+  <p id="phase">phase:</p>
+  <p id="lst_dmg_dlt">last damage dealt: 0</p>
+  <p id="max_dist">max kill distance: 0</p>
+  <p id="killer">killer:</p>
+  <p id="knockouts">knockouts: 0</p>
+  <p id="knockedouts">knockedouts: 0</p>
+</body>
+</html>
