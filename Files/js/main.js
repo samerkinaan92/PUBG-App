@@ -77,7 +77,7 @@ overwolf.games.getRunningGameInfo(function (res) {
   if (gameRunning(res)) {
       registerEvents();
       setTimeout(setFeatures, 1000);
-      isMedMatch();
+      //isMedMatch();
     }
     console.log("getRunningGameInfo");
 });
@@ -95,9 +95,7 @@ $(".selected-session-div").hide();
 loadSessionFile();
 
 overwolf.media.audio.setVolume(50, function(res){
-  console.log("Volume was set to 50");
-  console.log(res);
-  if(res.status === "status"){
+  if(res.status === "success"){
     console.log("Volume was set to 50");
   }
 });
@@ -160,6 +158,8 @@ function registerEvents() {
         kill_event();
       }else if(info.events[0].name === "revived"){
         revived_event();
+      }else if(info.events[0].name === "death"){
+        death_event();
       }
 
     });
@@ -214,7 +214,6 @@ function gameRunning(gameInfo) {
   }
 
   console.log("PUBG running");
-  isMedMatch();
   return true;
 }
 
@@ -285,6 +284,10 @@ function game_info_update(game_info){
   }
 }
 
+function death_event(){
+  playVoice('death');
+}
+
 function kill_event(){
   playVoice('kill');
 }
@@ -341,6 +344,8 @@ function matchEnd_event(){
 
 function matchSummary_event(){
   addMatch();
+  if(match.rank_me === "1")
+    playVoice('win');
 }
 
 function knockout_event(){
@@ -398,9 +403,8 @@ function hideSession(){
 
 //adds match to swiper and saves in DB
 function addMatch(){
-  overwolf.games.events.getInfo(function(res){
-    setMatch(res);
-  });
+  var date = new Date();
+  match.date = date.toDateString() + " " + date.toTimeString();
 
   let slides = mySwiper.slides.length + 1;
 
@@ -411,6 +415,8 @@ function addMatch(){
   saveSessionFile();
 }
 
+
+/*
 //checks when opnning the app if game is med match
 function isMedMatch(){
   overwolf.games.events.getInfo(function(res){
@@ -422,17 +428,22 @@ function isMedMatch(){
   });
 }
 
+/*
 //sets match properties
 function setMatch(res){
-  if(res.res.status === "success"){
+  console.log(res);
+  if(res.status === "success"){
+    match.date = (new Date()).toString();
     match.map = res.res.match_info.map;
     $("#map").html("map: " + mapNames[match.map]);
     match.mode = res.res.match_info.mode;
     $("#mode").html("mode: " + match.mode);
-    match.kills = res.res.match_info.kills;
+    if(res.res.match_info.kills !== undefined)
+      match.kills = res.res.match_info.kills;
     $("#kills").html("kills: " + match.kills);
     match.headshots = res.res.match_info.headshots;
     $("#headshots").html("headshots: " + match.headshots);
+
     match.maxKillDist = res.res.match_info.max_kill_distance;
     $("#max_dist").html("max kill distance:: " + match.maxKillDist);
     match.totalDamage = res.res.match_info.total_damage_dealt;
@@ -450,6 +461,7 @@ function setMatch(res){
     console.log("getInfo was not successful");
   }
 }
+*/
 
 //TODO: save user settings
 function setSttings(){
@@ -497,18 +509,22 @@ function showMatchSession(index){
       </tr>
       <tr>
           <td>mode: ` + matches[index].mode + `</td>
-          <td>team: ` + matches[index].team + `</td>
+          <td id="old-session-team">team: ` + matches[index].team + `</td>
       </tr>
       <tr>
           <td>max kill distance: ` + matches[index].maxKillDist + `</td>
           <td>killer: ` + matches[index].killer + `</td>
       </tr>
-      <tr>
+      <tr id="old-session-knock">
           <td>knockouts: ` + matches[index].knockouts + `</td>
           <td>knockedouts: ` + matches[index].knockedouts + `</td>
       </tr>
     </table>
-  `)
+  `);
+  if(matches[index].mode === "solo"){
+    $("#old-session-team").hide();
+    $("#old-session-knock").hide();
+  }
 }
 
 //saves match to local DB
@@ -561,7 +577,6 @@ function appendSlide(match){
           <td><p class="game-subtitle">` + match.date + `</p></td>
         </tr>
         <tr>
-          <td><p class="game-subtitle">Mode: ` + match.mode + `</p></td>
           <td><p class="game-subtitle">Rank: ` + match.rank_me + `/` + match.rank_total + `</p></td>
         </tr>
         </table>
