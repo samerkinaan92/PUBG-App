@@ -10,16 +10,16 @@ var g_interestedInFeatures = [
     'rank',
   ];
 
-  var mapNames = {
+var mapNames = {
     "Desert_Main": "Miramar",
     "DihorOtok_Main": "Vikendi",
     "Erangel_Main": "Erangel",
     "Range_Main": "Camp Jackal",
     "Savage_Main": "Sanhok"
-  };
+};
 
-  var events = ["kill", "knockout", "headshot", "revived", "knockedout", "death", "win"];
-
+var events = ["kill", "knockout", "headshot", "revived", "knockedout", "death", "win"];
+var logDev = [];
 
 var windowId;
 var team;
@@ -94,13 +94,8 @@ $(".selected-session-div").hide();
 
 loadSessionFile();
 
-overwolf.media.audio.setVolume(50, function(res){
-  if(res.status === "success"){
-    console.log("Volume was set to 50");
-  }
-});
-
 initVoiceSelect();
+getLEDSyncDev();
 
 /*
 *******************************************************************
@@ -266,6 +261,9 @@ function match_info_update(match_info){
     }
   }else if("me" in match_info){
     match.rank_me = match_info.me;
+    if(match.rank_me === "1"){
+      playVoice('win');
+    }
   }
 }
 
@@ -344,8 +342,6 @@ function matchEnd_event(){
 
 function matchSummary_event(){
   addMatch();
-  if(match.rank_me === "1")
-    playVoice('win');
 }
 
 function knockout_event(){
@@ -403,9 +399,7 @@ function hideSession(){
 
 //adds match to swiper and saves in DB
 function addMatch(){
-  var date = new Date();
-  match.date = date.toDateString() + " " + date.toTimeString();
-
+  match.date = getDateString();
   let slides = mySwiper.slides.length + 1;
 
   match.matchName = "Match " + (slides.toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false})); 
@@ -413,6 +407,13 @@ function addMatch(){
   matches.push(match);
   mySwiper.slideNext()
   saveSessionFile();
+}
+
+function getDateString(){
+  var date = new Date();
+  var str = date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear() + 
+    " " + (date.getHours()).toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false}) + ":" + (date.getMinutes()).toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false});
+  return str;
 }
 
 
@@ -473,10 +474,8 @@ function resetLiveFeed(){
   $("#map").html("map:");
   $("#kills").html("kills: 0");
   $("#headshots").html("headshots: 0");
-  $("#total_damage_dealt").html("total damage dealt: 0");
   $("#mode").html("mode:");
   $("#team").html("team:");
-  $("#lst_dmg_dlt").html("last damage dealt: 0");
   $("#max_dist").html("max kill distance: 0");
   $("#knockedouts").html("knockedouts: 0");
   $("#knockouts").html("knockouts:");
@@ -489,14 +488,12 @@ function showMatchSession(index){
   $(".selected-session-div").empty();
   $(".selected-session-div").show();
   $(".selected-session-div").append(`
-    <header class"app-header">
       <h2>` + matches[index].matchName + `</h2>
-      <div class="app-controls-group">
-        <button class="app-control" onclick="hideSession()">
+      <div class="session-controls-group">
+        <button class="session-control" onclick="hideSession()">
           <img class="svg-icon-fill" src="img/svg/close.svg" width="10", height="10">
         </button>
-    </div>
-    </header>`);
+      </div>`);
   $(".selected-session-div").append(`
     <table style="width:100%">
       <tr>
@@ -590,7 +587,7 @@ function getVoice(event){
   overwolf.utils.openFilePicker("*.mp3,*.wav", function(res){
     if(res.status === "success"){
       overwolf.media.audio.create(res.url, function(callback){
-        if(callback.status === "success"){
+        if(callback.hasOwnProperty('id')){
           voicesIds[event] = callback.id;
           console.log(event + " audio file was created");
         }
@@ -640,6 +637,32 @@ function addVoiceEvent(){
   $("#voice-event-select option[value='" + selected + "']").remove();
 }
 
-function LEDSync(){
-  
+function getLEDSyncDev(){
+  overwolf.logitech.getVersion(function(res){
+    console.log(res);
+  });
+
+  overwolf.logitech.getDevices(function(res){
+    console.log(res);
+    logDev = res.devices;
+  });
+
+  overwolf.logitech.led.init(function(res){
+    console.log(res);
+  });
+
+  overwolf.logitech.led.setTargetDevice([overwolf.logitech.led.enums.LogitechDeviceLightingType.All], function(res){
+    console.log(res);
+  });
+
+  overwolf.logitech.led.saveCurrentLighting(function(res){
+    console.log(res);
+  });
+
+  overwolf.logitech.led.flashLighting(20, 30, 50, 300, 300, function(res){
+    console.log(res);
+    setTimeout(overwolf.logitech.led.restoreLighting, 15000, function(callback){
+      console.log(callback);
+    });
+  });
 }
