@@ -8,9 +8,10 @@
         "author": "Samer Kinaan",
         "icon": "icon.png",
         "icon_gray": "icon_gray.png",
-        "description": "PUBG live stats shows you live stats from your current PUBG match."
+        "launcher_icon": "logo.ico",
+        "description": "PUBG live stats shows you live stats from your current PUBG match, play voices on PUBG event, flash Logitech RGB devices"
     },
-    "permissions": ["Profile","FileSystem","LogitechLed"],
+    "permissions": ["Profile","LogitechLed", "FileSystem", "Hotkeys"],
     "data": {
         "game_targeting": {
             "type": "dedicated",
@@ -31,6 +32,13 @@
                 "resizable": true,
                 "size": {"width": 1200, "height": 900},
                 "min_size": {"width": 600, "height": 400}
+            }
+        },
+        "hotkeys" : {
+            "stop_playback": {
+                "title": "Stop playback",
+                "action-type": "custom",
+                "default": "Ctrl+Alt+C"
             }
         }
     }

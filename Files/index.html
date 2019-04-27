@@ -5,7 +5,6 @@
   <script src="js/jquery-3.3.1.js"></script>
   <title>Overwolf PUBG Sample App</title>
   <script src="js/swiper.js" type="text/javascript" language="javascript"></script>
-  <script src="js/GameSession.js" type="text/javascript" language="javascript"></script>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/swiper.css" />
 </head>
@@ -68,82 +67,35 @@
   </div>
   <div class="match-session">
     <h2>Settings</h2>
+    <!--<h4>Set Player to notification in mathes</h4>
+    <span>user name</span>
+    <input type="text" id="playerTxt">
+    <button onclick="addPlayer($('#playerTxt').val())">ADD</button>
+    <select id="playerList" multiple></select>-->
     <h3 >Voices</h3>
-    <table id="voice-table">
-      <tr>
-        <td>
-          <select id="voice-event-select"></select>
-        </td>
-        <td>
-          <button onclick="addVoiceEvent()">ADD</button>
-        </td>
-      </tr>
-      <tr>
-        <th>Event</th>
-        <th>Voice file</th>
-        <th>Play</th>
-      </tr>
+    <table id="voice-table" class="table">
+      <thead class="thead-dark">
+        <tr>
+          <td>
+            <select id="voice-event-select"></select>
+          </td>
+          <td>
+            <button class="settings-btns" onclick="addVoiceEvent($('#voice-event-select').val())">ADD</button>
+          </td>
+        </tr>
+        <tr>
+          <th scope="col">Event</th>
+          <th scope="col">Voice file</th>
+          <th scope="col">Volume</th>
+          <th scope="col">Test</th>
+          <th scope="col"> </th>
+        </tr>
+      </thead>
     </table>
 
 
     <h3>Logitech LED sync</h3>
-    <table>
-      <tr>
-        <th>Event</th>
-        <th>Keyboard</th>
-        <th>speakers</th>
-        <th>Play</th>
-      </tr>
-      <tr>
-        <td>Kill</td>
-        <td>
-          <select>
-            <option value="none">none</option>
-            <option value="country">country</option>
-            <option value="asian">asian</option>
-          </select>
-        </td>
-        <td>
-          <select>
-            <option value="none">none</option>
-            <option value="country">country</option>
-            <option value="asian">asian</option>
-          </select>
-        </td>
-        <td>
-          <button onclick="LEDSync()"><img src="img/svg/light.svg"></button>
-        </td>
-      </tr>
-      <tr>
-        <td>Headshot</td>
-        <td>
-          <select>
-            <option value="none">none</option>
-            <option value="country">country</option>
-            <option value="asian">asian</option>
-          </select>
-        </td>
-        <td>
-          <select>
-            <option value="none">none</option>
-            <option value="country">country</option>
-            <option value="asian">asian</option>
-          </select>
-        </td>
-        <td>
-          <button><img src="img/svg/light.svg"></button>
-        </td>
-      </tr>
-    </table>
-    <button onclick="setSettings()">save</button>
-  </div>
-  <div class="match-session">
-    <h2>Credits</h2>
-    <div>Icons made by 
-      <a href="https://www.freepik.com/" title="Freepik">Freepik</a> from 
-      <a href="https://www.flaticon.com/" 			    title="Flaticon">www.flaticon.com</a> is licensed by 
-      <a href="http://creativecommons.org/licenses/by/3.0/" 			    title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a>
-    </div>
+    <dev class="logitecDevLst"></dev>
   </div>
   <script src="js/main.js" type="text/javascript" language="javascript"></script>
 </body>

@@ -8,6 +8,8 @@ var g_interestedInFeatures = [
     'phase',
     'map',
     'rank',
+    'me',
+    'roster'
   ];
 
 var mapNames = {
@@ -18,7 +20,7 @@ var mapNames = {
     "Savage_Main": "Sanhok"
 };
 
-var events = ["kill", "knockout", "headshot", "revived", "knockedout", "death", "win"];
+var events = ["kill", "knockout", "headshot", "revived", "knockedout", "death", "win", "jump", "fire", "damageTaken"];
 var logDev = [];
 
 var windowId;
@@ -26,10 +28,10 @@ var team;
 var match = {};
 var matches = [];
 var isFeatureSet = false;
-let encoding = overwolf.io.UTF8;
-let filePath = "D:\\overwolf PUBG app\\matches.txt";
 
 var voicesIds= {};
+var voicesPaths = {};
+var leds = {};
 
 var mySwiper = new Swiper('.swiper-container', {
   speed: 400,
@@ -89,13 +91,47 @@ overwolf.windows.getCurrentWindow(function(result) {
     windowId = result.window.id;
   }
 });
+
+overwolf.settings.registerHotKey(
+  "stop_playback",
+  function(arg) {
+    console.log(arg);
+      if (arg.status == "success") {
+          overwolf.media.audio.stop(function(res){
+            console.log(res);
+          });
+      }
+  }
+);
+
+
 $("#live-stats-table").hide();
 $(".selected-session-div").hide();
 
 loadSessionFile();
 
-initVoiceSelect();
+initSelect("voice");
 getLEDSyncDev();
+loadSettings();
+
+overwolf.media.audio.onPlayStateChanged.addListener(function(res){
+  for(voice in voicesIds){
+    if(voicesIds.hasOwnProperty(voice)){
+      if(voicesIds[voice] == res.id){
+        if(res.playback_state == "playing"){
+          overwolf.media.audio.setVolume(0, function(res){
+            console.log(res);
+          });
+          $("#" + voice + "VoicePlayBtn").html('<img src="img/svg/speakerOff.svg">');
+          $("#" + voice + "VoicePlayBtn").val(1);
+        }else if(res.playback_state == "stopped"){
+          $("#" + voice + "VoicePlayBtn").html('<img src="img/svg/speaker.svg">');
+          $("#" + voice + "VoicePlayBtn").val(0);
+        }
+      }
+    }
+  }
+});
 
 /*
 *******************************************************************
@@ -132,6 +168,8 @@ function registerEvents() {
     // an event triggerd
     overwolf.games.events.onNewEvents.addListener(function(info) {
       console.log("EVENT FIRED: " + JSON.stringify(info));
+      playVoice(info.events[0].name);
+      playLed(info.events[0].name);
       if(info.events[0].name === "damage_dealt"){
         damage_dealt_event(info.events[0].data);
       }else if(info.events[0].name === "killer"){
@@ -155,6 +193,12 @@ function registerEvents() {
         revived_event();
       }else if(info.events[0].name === "death"){
         death_event();
+      }else if(info.events[0].name === "fire"){
+        fire_event();
+      }else if(info.events[0].name === "damageTaken"){
+        damageTaken_event();
+      }else if(info.events[0].name === "jump"){
+        jump_event();
       }
 
     });
@@ -264,6 +308,8 @@ function match_info_update(match_info){
     if(match.rank_me === "1"){
       playVoice('win');
     }
+  }else if("roster" in match_info){
+
   }
 }
 
@@ -282,20 +328,24 @@ function game_info_update(game_info){
   }
 }
 
+
+/*
+*******************************************************************
+************************events************************************
+*******************************************************************
+*/
+
+
 function death_event(){
-  playVoice('death');
 }
 
 function kill_event(){
-  playVoice('kill');
 }
 
 function headshot_event(){
-  playVoice('headshot');
 }
 
 function revived_event(){
-  playVoice('revived');
 }
 
 function damage_dealt_event(damage_dealt){
@@ -309,6 +359,32 @@ function killer_event(killer_name){
 }
 
 function matchStart_event(){
+}
+
+function matchEnd_event(){
+}
+
+function matchSummary_event(){
+  addMatch();
+}
+
+function knockout_event(){
+  match.knockouts += 1;
+  $("#knockouts").html("knockouts: " + match.knockouts);
+}
+
+function knockedout_event(){
+  match.knockedouts += 1;
+  $("#knockedouts").html("knockedouts: " + match.knockedouts);
+}
+
+function fire_event(){
+}
+
+function damageTaken_event(){
+}
+
+function jump_event(){
 }
 
 function setNewMatch(){
@@ -335,25 +411,6 @@ function setNewMatch(){
   $("#kills").html("kills: 0");
   $("#knockouts").html("knockouts: " + match.knockouts);
   $("#knockedouts").html("knockedouts: " + match.knockedouts);
-}
-
-function matchEnd_event(){
-}
-
-function matchSummary_event(){
-  addMatch();
-}
-
-function knockout_event(){
-  match.knockouts += 1;
-  $("#knockouts").html("knockouts: " + match.knockouts);
-  playVoice('knockout');
-}
-
-function knockedout_event(){
-  match.knockedouts += 1;
-  $("#knockedouts").html("knockedouts: " + match.knockedouts);
-  playVoice('knockedout');
 }
 
 //close app
@@ -416,59 +473,6 @@ function getDateString(){
   return str;
 }
 
-
-/*
-//checks when opnning the app if game is med match
-function isMedMatch(){
-  overwolf.games.events.getInfo(function(res){
-    if(res.res.status === "success"){
-      if (['freefly', 'aircraft'].contains(res.res.game_info.phase)) {
-        setMatch(res);
-      }
-    }
-  });
-}
-
-/*
-//sets match properties
-function setMatch(res){
-  console.log(res);
-  if(res.status === "success"){
-    match.date = (new Date()).toString();
-    match.map = res.res.match_info.map;
-    $("#map").html("map: " + mapNames[match.map]);
-    match.mode = res.res.match_info.mode;
-    $("#mode").html("mode: " + match.mode);
-    if(res.res.match_info.kills !== undefined)
-      match.kills = res.res.match_info.kills;
-    $("#kills").html("kills: " + match.kills);
-    match.headshots = res.res.match_info.headshots;
-    $("#headshots").html("headshots: " + match.headshots);
-
-    match.maxKillDist = res.res.match_info.max_kill_distance;
-    $("#max_dist").html("max kill distance:: " + match.maxKillDist);
-    match.totalDamage = res.res.match_info.total_damage_dealt;
-    $("#total_damage_dealt").html("total damage dealt: " + match.totalDamage);
-    if(match.mode !== "solo"){
-      match.rank_total = res.res.match_info.total_teams;
-      data = JSON.parse(res.res.match_info.nicknames);
-      match.team = data.team_members;
-      $("#team").html("team: " + match.team);
-      $("#team").show();
-      console.log(match.team);
-    }
-    console.log("setMatch was successful");
-  }else{
-    console.log("getInfo was not successful");
-  }
-}
-*/
-
-//TODO: save user settings
-function setSttings(){
-
-}
-
 //resets live feed after match has been end
 function resetLiveFeed(){
   $("#map").html("map:");
@@ -527,35 +531,23 @@ function showMatchSession(index){
 //saves match to local DB
 function saveSessionFile(){
   let json = JSON.stringify(matches);
-  overwolf.io.writeFileContents(filePath, json, encoding, true, function(res){
-    if(res.status === "success")
-      console.log("File was saved successfly");
-  });
+  localStorage.matches = json;
 }
 
 //load all matches from local DB
 function loadSessionFile(){
-  overwolf.io.fileExists(filePath, function(res){
-    if(res.status === "success"){
-      if(res.found){
-        overwolf.io.readFileContents(filePath, encoding, function(res){
-          if(res.status === "success"){
-            json = res.content;
-            matches = JSON.parse(json);
-            matches.forEach(element => {
-              appendSlide(element);
-            });
-            mySwiper.slideTo(matches.length - 1);
-            console.log("matches been loaded");
-          }else if(res.status === "error"){
-            console.log("Error loading file: " + res.reason);
-          }
-        });
-      }else{
-        console.log("File was not found");
-      }
-    }
-  });
+  if(localStorage.matches){
+    var json = localStorage.matches;
+    matches = JSON.parse(json);
+    matches.forEach(element => {
+      appendSlide(element);
+    });
+    mySwiper.slideTo(matches.length - 1);
+    console.log("matches been loaded");
+  }else{
+    console.log("matches is null");
+  }
+
 }
 
 function appendSlide(match){
@@ -583,35 +575,103 @@ function appendSlide(match){
   `);
 }
 
-function getVoice(event){
-  overwolf.utils.openFilePicker("*.mp3,*.wav", function(res){
-    if(res.status === "success"){
-      overwolf.media.audio.create(res.url, function(callback){
-        if(callback.hasOwnProperty('id')){
-          voicesIds[event] = callback.id;
-          console.log(event + " audio file was created");
-        }
-      });
-    }else{
-      console.log(event + " audio file " + res.status);
-    }
-  });
+//save user settings
+function saveVoices(){
+  var json = JSON.stringify(voicesPaths);
+  localStorage.voicesPaths = json;
 }
 
-function playVoice(event){
-  if (voicesIds[event] === undefined){
-    console.log(event + " voice is undefined");
+function loadSettings(){
+  if(localStorage.voicesPaths){
+    voicesPaths = JSON.parse(localStorage.voicesPaths);
+    for(var event in voicesPaths){
+      if(voicesPaths.hasOwnProperty(event)){
+        addVoiceEvent(event);
+        getVoice(event, voicesPaths[event]);
+      }
+    }
+    console.log("voices has been loaded");
   }else{
-    overwolf.media.audio.play(voicesIds[event], function(res){
+    console.log("no settings where found");
+  }
+
+  setTimeout(loadFlashLed, 200);
+}
+
+function loadFlashLed(){
+  if(localStorage.leds){
+    leds = JSON.parse(localStorage.leds);
+    for(var event in leds){
+      if(leds.hasOwnProperty(event)){
+        addLEDEvent(event, true);
+        $('#' + event + 'LedDur').val(leds[event].duration);
+        $('#' + event + 'LedInt').val(leds[event].interval);
+        $('#' + event + 'hexVal').val(leds[event].color);
+        var color = leds[event].color;
+        var pixel = [parseInt(color.substring(1,3),16), parseInt(color.substring(3,5),16), parseInt(color.substring(5),16)];
+        // update preview color
+        var pixelColor = "rgb("+pixel[0]+", "+pixel[1]+", "+pixel[2]+")";
+        $('#' + event + 'preview').css('backgroundColor', pixelColor);
+
+        // update controls
+        $('#' + event + 'rVal').val(pixel[0]);
+        $('#' + event + 'gVal').val(pixel[1]);
+        $('#' + event + 'bVal').val(pixel[2]);
+        $('#' + event + 'rgbVal').val(pixel[0]+','+pixel[1]+','+pixel[2]);
+      }
+    }
+  }
+}
+
+function getVoice(event, path){
+  if(path == null){
+    overwolf.utils.openFilePicker("*.mp3,*.wav", function(res){
       if(res.status === "success"){
-        console.log(event + " voice is playing");
+        voicesPaths[event] = res.url;
+        overwolf.media.audio.create(res.url, function(callback){
+          if(callback.hasOwnProperty('id')){
+            voicesIds[event] = callback.id;
+            console.log(event + " audio file was created");
+          }
+        })
+        saveVoices();
+      }else{
+        console.log(event + " audio file " + res.status);
+      }
+    });
+  }else{
+    overwolf.media.audio.create(path, function(callback){
+      if(callback.hasOwnProperty('id')){
+        voicesIds[event] = callback.id;
+        console.log(event + " audio file was created");
       }
     });
   }
 }
 
-function initVoiceSelect(){
-  var select = $("#voice-event-select");
+function playVoice(event, val){
+  if (voicesIds[event] === undefined){
+    console.log(event + " voice is undefined");
+  }else{
+    var vol = parseInt($("#" + event + "Volume").val());
+    if(val == 0){
+      overwolf.media.audio.play(voicesIds[event], function(res){
+        if(res.status === "success"){
+          console.log(event + " voice is playing");
+        }
+      });
+    }else if(val == 1){
+      overwolf.media.audio.stopById(voicesIds[event], function(res){
+        if(res.status === "success"){
+          console.log(event + " voice stopped");
+        }
+      });
+    }
+  }
+}
+
+function initSelect(str){
+  var select = $("#"+ str + "-event-select");
   events.forEach(element => {
     var option = $('<option></option>');
     option.attr('value', element);
@@ -620,16 +680,22 @@ function initVoiceSelect(){
   });
 }
 
-function addVoiceEvent(){
-  var selected = $("#voice-event-select").val();
+function addVoiceEvent(selected){
   $("#voice-table").append(`
-  <tr>
-    <td>` + selected + `</td>
+  <tr id="` + selected + `-voice-event">
+    <th scope="row">` + selected + `</th>
     <td>
-      <button id="getVoicePathBtn" onclick="getVoice('` + selected + `')">Choose...</button>
+      <button class="settings-btns" onclick="getVoice('` + selected + `', null)">Choose...</button>
     </td>
     <td>
-      <button id="playVoiceBtn" onclick="playVoice('` + selected + `')"><img src="img/svg/speaker.svg"></button>
+      <input type="range" id="` + selected + `Volume" min="0" max="100" onchange="setVol('` + selected + `')">
+      <span id="` + selected + `ValBox">50</span>
+    </td>
+    <td>
+      <button value="0" id="` + selected + `VoicePlayBtn" class="session-control" onclick="playVoice('` + selected + `', this.value)"><img src="img/svg/speaker.svg"></button>
+    </td>
+    <td>
+      <button class="settings-btns" onclick="delVoice('` + selected + `')">Remove</button>
     </td>
   </tr>
   `);
@@ -637,32 +703,275 @@ function addVoiceEvent(){
   $("#voice-event-select option[value='" + selected + "']").remove();
 }
 
+function setVol(selected){
+  var vol = parseInt($("#" + selected + "Volume").val());
+  $("#"  + selected + "ValBox").text(vol);
+  overwolf.media.audio.setVolumeById(voicesIds[selected] ,vol, function(res){
+    console.log(res);
+  });
+}
+
+function delVoice(event){
+  //show conform message box
+  let params = {
+    message_title: "Delete voice event",
+    message_body: "Are you sure you want to delete " + event + " voice event?",
+    message_box_icon: overwolf.windows.enums.MessagePromptIcon.QuestionMark,
+  };
+  overwolf.windows.displayMessageBox(params, function(res){
+    if(res.confirmed == true){
+      $("#" + event + "-voice-event").remove();
+      delete voicesIds[event];
+      delete voicesPaths[event];
+      var select = $("#voice-event-select");
+      var option = $('<option></option>');
+      option.attr('value', event);
+      option.text(event);
+      select.append(option);
+      saveVoices();
+    }
+  });
+}
+
+function addLEDEvent(selected, prev){
+  $("#RGB-table").append(`
+  <tr id="` + selected + `-led-event">
+    <th>` + selected + `</th>
+    <td>
+      <!-- preview element -->
+      <div class="preview" id="` + selected + `preview"></div>
+
+      <!-- colorpicker element -->
+      <div class="colorpicker" id="` + selected + `colorpicker" style="display:none">
+        <canvas id="` + selected + `picker" width="300" height="300"></canvas>
+
+          <div class="controls">
+            <div><label>R</label> <input type="text" id="` + selected + `rVal" /></div>
+            <div><label>G</label> <input type="text" id="` + selected + `gVal" /></div>
+            <div><label>B</label> <input type="text" id="` + selected + `bVal" /></div>
+            <div><label>RGB</label> <input type="text" id="` + selected + `rgbVal" /></div>
+            <div><label>HEX</label> <input type="text" id="` + selected + `hexVal" /></div>
+          </div>
+      </div>
+    </td>
+    <td>
+      <input type="number" id="` + selected + `LedDur" value="3000" min="0" max="10000"> ms
+    </td>
+    <td>
+      <input type="number" id="` + selected + `LedInt" value="300" min="0" max="2000"> ms
+    </td>
+    <td>
+      <button class="session-control" id="playLEDBtn" onclick="playLed('` + selected + `')"><img src="img/svg/light.svg"></button>
+    </td>
+    <td>
+      <button class="settings-btns" id="delLEDBtn" onclick="delLED('` + selected + `')">Remove</button>
+    </td>
+  </tr>
+  `);
+  
+  $("#RGB-event-select option[value='" + selected + "']").remove();
+  
+  if(!prev){
+    var ev = {color: "#000000", duration: 3000, interval: 300};
+    leds[selected] = ev;
+    saveLED();
+  }
+  
+  
+  $(function(){
+    var bCanPreview = true; // can preview
+
+    // create canvas and context objects
+    var canvas = document.getElementById(selected + 'picker');
+    var ctx = canvas.getContext('2d');
+
+    // drawing active image
+    var image = new Image();
+    image.onload = function () {
+        ctx.drawImage(image, 0, 0, image.width, image.height); // draw the image on the canvas
+    }
+
+    // select desired colorwheel
+    var imageSrc = 'img/colorPicker/colorwheel1.png';
+    image.src = imageSrc;
+
+    $('#' + selected + 'LedDur').change(function() {
+      var dur = $('#' + selected + 'LedDur').val();
+      if(dur > 10000){
+        $('#' + selected + 'LedDur').val(10000);
+      }else if(dur < 0){
+        $('#' + selected + 'LedDur').val(0);
+      }
+      leds[selected].duration = $('#' + selected + 'LedDur').val();
+      saveLED();
+    });
+
+    $('#' + selected + 'LedInt').change(function() {
+      var dur = $('#' + selected + 'LedInt').val();
+      if(dur > 10000){
+        $('#' + selected + 'LedInt').val(2000);
+      }else if(dur < 0){
+        $('#' + selected + 'LedInt').val(0);
+      }
+      leds[selected].interval = $('#' + selected + 'LedInt').val();
+      saveLED();
+    });
+
+    $('#' + selected + 'picker').mousemove(function(e) { // mouse move handler
+        if (bCanPreview) {
+            // get coordinates of current position
+            var canvasOffset = $(canvas).offset();
+            var canvasX = Math.floor(e.pageX - canvasOffset.left);
+            var canvasY = Math.floor(e.pageY - canvasOffset.top);
+
+            // get current pixel
+            var imageData = ctx.getImageData(canvasX, canvasY, 1, 1);
+            var pixel = imageData.data;
+
+            // update preview color
+            var pixelColor = "rgb("+pixel[0]+", "+pixel[1]+", "+pixel[2]+")";
+            $('#' + selected + 'preview').css('backgroundColor', pixelColor);
+
+            // update controls
+            $('#' + selected + 'rVal').val(pixel[0]);
+            $('#' + selected + 'gVal').val(pixel[1]);
+            $('#' + selected + 'bVal').val(pixel[2]);
+            $('#' + selected + 'rgbVal').val(pixel[0]+','+pixel[1]+','+pixel[2]);
+
+            var dColor = pixel[2] + 256 * pixel[1] + 65536 * pixel[0];
+            $('#' + selected + 'hexVal').val('#' + ('0000' + dColor.toString(16)).substr(-6));
+        }
+    });
+    $('#' + selected + 'picker').click(function(e) { // click event handler
+        bCanPreview = !bCanPreview;
+    }); 
+    $('#' + selected + 'preview').click(function(e) { // preview click
+        if(!($('#' + selected + 'colorpicker').is(":visible"))){
+          bCanPreview = true;
+        }else{
+          leds[selected].color = $('#' + selected + 'hexVal').val();
+          saveLED();
+        }
+        $('#' + selected + 'colorpicker').fadeToggle("fast", "linear");
+    });
+  });
+}
+
+function playLed(selected){
+  var col = $('#' + selected + 'hexVal').val();
+  var dur = $("#" + selected + "LedDur").val();
+  var int = $("#" + selected + "LedInt").val();
+  if(!col || !dur || !int){
+    console.log("event not defined good");
+  }else{
+    flashLighting(col, dur, int);
+  }
+}
+
+function delLED(selected){
+  //show conform message box
+  let params = {
+    message_title: "Delete LED flashing event",
+    message_body: "Are you sure you want to delete " + selected + " LED flashing event?",
+    message_box_icon: overwolf.windows.enums.MessagePromptIcon.QuestionMark,
+  };
+  overwolf.windows.displayMessageBox(params, function(res){
+    if(res.confirmed == true){
+      $("#" + selected + "-led-event").remove();
+      var select = $("#RGB-event-select");
+      var option = $('<option></option>');
+      option.attr('value', selected);
+      option.text(selected);
+      select.append(option);
+      delete leds[selected];
+      saveLED();
+    }
+  });
+}
+
+function saveLED(){
+  var json = JSON.stringify(leds);
+  localStorage.leds = json;
+}
+
+function flashLighting(color, duration, interval){
+  var rgbColor = convertColor(color);
+  overwolf.logitech.led.flashLighting(rgbColor.rChannel, rgbColor.gChannel, rgbColor.bChannel, duration, interval, function(res){
+    console.log(res);
+  });
+}
+
+function convertColor(color) {
+  /* Check for # infront of the value, if it's there, strip it */
+
+  if(color.substring(0,1) == '#') {
+     color = color.substring(1);
+   }
+
+  var rgbColor = {};
+
+  /* Grab each pair (channel) of hex values and parse them to ints using hexadecimal decoding */
+  rgbColor.rChannel = Math.round((parseInt(color.substring(0,2),16)/255)*100);
+  rgbColor.gChannel = Math.round((parseInt(color.substring(2,4),16)/255)*100);
+  rgbColor.bChannel = Math.round((parseInt(color.substring(4),16)/255)*100);
+
+  return rgbColor;
+ }
+
 function getLEDSyncDev(){
   overwolf.logitech.getVersion(function(res){
-    console.log(res);
   });
 
   overwolf.logitech.getDevices(function(res){
-    console.log(res);
     logDev = res.devices;
-  });
-
-  overwolf.logitech.led.init(function(res){
-    console.log(res);
-  });
-
-  overwolf.logitech.led.setTargetDevice([overwolf.logitech.led.enums.LogitechDeviceLightingType.All], function(res){
-    console.log(res);
-  });
-
-  overwolf.logitech.led.saveCurrentLighting(function(res){
-    console.log(res);
-  });
-
-  overwolf.logitech.led.flashLighting(20, 30, 50, 300, 300, function(res){
-    console.log(res);
-    setTimeout(overwolf.logitech.led.restoreLighting, 15000, function(callback){
-      console.log(callback);
+    var isRGB = false;
+    logDev.forEach(element => {
+      if(element.lightingId == '2'){
+        isRGB = true;
+      }
     });
+    if(isRGB){
+      $(".logitecDevLst").append(`
+        <table id="RGB-table" class="table">
+          <thead class="thead-dark">
+            <tr>
+              <td>
+                <select id="RGB-event-select"></select>
+              </td>
+              <td>
+                <button class="settings-btns" onclick="addLEDEvent($('#RGB-event-select').val(), false)">ADD</button>
+              </td>
+            </tr>
+            <tr>
+              <th>Event</th>
+              <th>Color</th>
+              <th>Duration</th>
+              <th>Interval</th>
+              <th>Test</th>
+              <th> </th>
+            </tr>
+          </thead>
+        </table>
+      `);
+      initSelect("RGB");
+      overwolf.logitech.led.init(function(res){
+      });
+    
+      overwolf.logitech.led.setTargetDevice([overwolf.logitech.led.enums.LogitechDeviceLightingType.RGB], function(res){
+      });
+    
+      overwolf.logitech.led.saveCurrentLighting(function(res){
+      });
+    }else{
+      $(".logitecDevLst").append(`
+        <h3>No Logitech RGB devices found</h3>
+      `);
+    }
   });
+}
+
+function addPlayer(name){
+  $("#playerList").append(`
+    <option value="` + name + `">` + name + `</option>
+  `);
 }
