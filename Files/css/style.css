@@ -60,6 +60,7 @@
 
   button:hover{
     background-color: #555555;
+    cursor: pointer;
   }
   
   button:focus {
@@ -517,21 +518,105 @@
 
 /**  table style  **/
 
-table{
-  width:100%;
-  opacity: 1;
+table {
+  border-collapse: collapse;
+  width: 100%;
 }
 
-td {
-  color: #000;
-  opacity: 1;
-}
-
-th {
+.table th,
+.table td {
+  padding: 8px;
   text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.thead-dark{
+  background-color: #272727;
+  color: white;
+}
+
+th{
   font-weight: bold;
 }
 
-tr{
-  border-bottom: 1px solid #ccc;
+/** tabs style **/
+
+/* Style the tab */
+.tab {
+  margin-top: 5px;
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  font-size: 17px;
+  font-weight: bold;
+  width: 33.33%;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+  background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+  background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+/* Style the select tag */
+select{
+  width: 85%; 
+  text-indent: 5px;
+  height: 32px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+select[multiple]{
+  height: auto;
+  width: 100%; 
+}
+
+/* Style the tooltip */
+.tooltip {
+  position: relative;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -60px;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
 }

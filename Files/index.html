@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-  <script src="js/jquery-3.3.1.js"></script>
   <title>Overwolf PUBG Sample App</title>
+  <script src="js/jquery-3.3.1.js"></script>
   <script src="js/swiper.js" type="text/javascript" language="javascript"></script>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/swiper.css" />
@@ -18,12 +18,12 @@
   
         <button class="window-control" onclick="toggleMaximize()">
           <svg class="svg-icon-fill" width="20" height="20">
-            <rect x="7.5" y="7.5" width="15" height="15" style="stroke:black; fill-opacity:0"/>
+            <rect x="7.5" y="7.5" width="15" height="15" style="stroke:white; fill-opacity:0"/>
           </svg> 
         </button>
   
         <button class="window-control window-control-close" onclick="closeApp()">
-          <img class="svg-icon-fill" src="img/svg/close.svg" width="15", height="15">
+          <img class="svg-icon-fill" src="img/svg/closeW.svg" width="15", height="15">
         </button>
       </div>
   </header>
@@ -64,38 +64,60 @@
           <td><p id="killer">killer:</p></td>
       </tr>
     </table>
+    <table id="live-stats-team-table"></table>
   </div>
   <div class="match-session">
     <h2>Settings</h2>
-    <!--<h4>Set Player to notification in mathes</h4>
-    <span>user name</span>
-    <input type="text" id="playerTxt">
-    <button onclick="addPlayer($('#playerTxt').val())">ADD</button>
-    <select id="playerList" multiple></select>-->
-    <h3 >Voices</h3>
-    <table id="voice-table" class="table">
-      <thead class="thead-dark">
+    <div class="tab">
+      <button class="tablinks" onclick="openSetting(event, 'Vocies')">Sound effects</button>
+      <button class="tablinks" onclick="openSetting(event, 'LED')">Logitech LED sync</button>
+      <button class="tablinks" onclick="openSetting(event, 'Users')">Users alert</button>
+    </div>
+    <div class="tabcontent" id="Users">
+      <p>Here you can add users sub-name, see if they enter the same match is yours and see how many kills they have when they die.<br><br></p>
+      <span>user name</span>
+      <input type="text" id="playerTxt">
+      <button class="tooltip" onclick="addPlayer($('#playerTxt').val())">ADD<span class="tooltiptext">Add user name to notification list</span></button>
+      <table>
         <tr>
-          <td>
-            <select id="voice-event-select"></select>
-          </td>
-          <td>
-            <button class="settings-btns" onclick="addVoiceEvent($('#voice-event-select').val())">ADD</button>
-          </td>
+          <th style="width: 30%;">Users List</th>
+          <th style="width: 70%;">Live feed</th>
         </tr>
         <tr>
-          <th scope="col">Event</th>
-          <th scope="col">Voice file</th>
-          <th scope="col">Volume</th>
-          <th scope="col">Test</th>
-          <th scope="col"> </th>
+          <td><select id="playerList" multiple></select></td>
+          <td><select id="playerInMatch" multiple></select></td>
         </tr>
-      </thead>
-    </table>
+      </table>
+      <button class="tooltip" onclick="removePlayer()">REMOVE<span class="tooltiptext">Remove user name from notification list</span></button>
+    </div>
 
+    <div class="tabcontent" id="Vocies">
+      <p>Here you can add voices that will play on event, for example you can add sound effect that will play each time you get a kill or play a song when you get a win.</p>
+      <p>To stop the voice playback during the game you can press <span id="hotkey"></span>.<br>To change the hotkey setting click <a href="overwolf://settings/hotkeys">here</a><br><br></p>
+      <table class="table">
+        <tr>
+          <td>
+            <span>Event: </span><select id="voice-event-select"></select>
+          </td>
+          <td>
+            <button class="settings-btns tooltip" onclick="addVoiceEvent($('#voice-event-select').val())">ADD<span class="tooltiptext">Add sound effect</span></button>
+          </td>
+        </tr>
+      </table>
+      <table id="voice-table" class="table">
+        <thead class="thead-dark">
+          <tr>
+            <th scope="col">Event</th>
+            <th scope="col" class="tooltip">Voice file<span class="tooltiptext">Choose sound effect file path</span></th>
+            <th scope="col" class="tooltip">Test<span class="tooltiptext">Test sound effect</span></th>
+            <th scope="col"> </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
 
-    <h3>Logitech LED sync</h3>
-    <dev class="logitecDevLst"></dev>
+    <dev class="logitecDevLst tabcontent" id="LED">
+    </dev>
   </div>
   <script src="js/main.js" type="text/javascript" language="javascript"></script>
 </body>

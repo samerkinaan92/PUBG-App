@@ -31,7 +31,7 @@
                 "transparent": false,
                 "resizable": true,
                 "size": {"width": 1200, "height": 900},
-                "min_size": {"width": 600, "height": 400}
+                "min_size": {"width": 600, "height": 750}
             }
         },
         "hotkeys" : {
