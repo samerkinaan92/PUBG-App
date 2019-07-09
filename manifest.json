@@ -2,14 +2,14 @@
     "manifest_version": 1,
     "type": "WebApp",
     "meta": {
-        "name": "PUBG live stats",
+        "name": "PUBG Effects",
         "version": "1.0",
         "minimum-overwolf-version": "0.127.0.7",
         "author": "Samer Kinaan",
         "icon": "icon.png",
         "icon_gray": "icon_gray.png",
-        "launcher_icon": "logo.ico",
-        "description": "PUBG live stats shows you live stats from your current PUBG match, play voices on PUBG event, flash Logitech RGB devices"
+        "launcher_icon": "logo_1.ico",
+        "description": "PUBG Effects shows you live stats from your current PUBG match, play sounds effects on PUBG event, flash Logitech RGB devices"
     },
     "permissions": ["Profile","LogitechLed", "FileSystem", "Hotkeys"],
     "data": {
@@ -31,13 +31,18 @@
                 "transparent": false,
                 "resizable": true,
                 "size": {"width": 1200, "height": 900},
-                "min_size": {"width": 600, "height": 750}
+                "min_size": {"width": 600, "height": 600}
             }
         },
         "hotkeys" : {
             "stop_playback": {
                 "title": "Stop playback",
                 "action-type": "custom",
+                "default": "Ctrl+Alt+S"
+            },
+            "open_close_app":{
+                "title": "Open and close app",
+                "action-type": "toggle",
                 "default": "Ctrl+Alt+C"
             }
         }

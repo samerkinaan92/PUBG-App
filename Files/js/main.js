@@ -116,7 +116,9 @@ overwolf.settings.getHotKey("stop_playback", function(arg){
 });
 
 overwolf.settings.OnHotKeyChanged.addListener(function(res){
-  $("#hotkey").html('"' + res.hotkey + '"');
+  if(res.source === "stop_playback"){
+    $("#hotkey").html('"' + res.hotkey + '"');
+  }
 });
 
 
