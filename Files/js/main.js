@@ -12,56 +12,28 @@ const g_interestedInFeatures = [
     'roster'
 ];
 
-const mapNames = {
-    "Desert_Main": "Miramar",
-    "DihorOtok_Main": "Vikendi",
-    "Erangel_Main": "Erangel",
-    "Range_Main": "Camp Jackal",
-    "Savage_Main": "Sanhok"
+const events = {
+    "kill": "Kill",
+    "knockout": "Knockout",
+    "headshot": "Headshot",
+    "revived": "Revived",
+    "knockedout": "Knockedout",
+    "death": "Death",
+    "win": "Win",
+    "jump": "Jump",
+    "fire": "Fire",
+    "damageTaken": "Taken damage"
 };
-
-const events = { "kill": "Kill", "knockout": "Knockout", "headshot": "Headshot", "revived": "Revived", "knockedout": "Knockedout", "death": "Death", "win": "Win", "jump": "Jump", "fire": "Fire", "damageTaken": "Taken damage" };
 let logDev = [];
 
 let windowId;
-let team;
-let match = {};
-let matches = [];
 let isFeatureSet = false;
 
 let voicesIds = {};
 let voicesPaths = {};
 let leds = {};
 let playersAlert = [];
-let matchesNum = 0;
 
-let mySwiper = new Swiper('.swiper-container', {
-    speed: 400,
-    onClick: (swiper, ev) => {
-        showMatchSession(swiper.clickedIndex);
-    },
-    // Default parameters
-    slidesPerView: 4,
-    spaceBetween: 3,
-    // Responsive breakpoints
-    breakpoints: {
-        // when window width is <= 1000px
-        600: {
-            slidesPerView: 1,
-            spaceBetween: 3,
-        },
-        // when window width is <= 1000px
-        1000: {
-            slidesPerView: 2,
-            spaceBetween: 3,
-        },
-        // when window width is <= 1350px
-        1350: {
-            slidesPerView: 3,
-            spaceBetween: 3,
-        }
-    }
-});
 
 // gets overwolf's user name
 overwolf.profile.getCurrentUser(function(res) {
@@ -120,12 +92,6 @@ overwolf.settings.OnHotKeyChanged.addListener(function(res) {
     }
 });
 
-
-$("#live-stats-table").hide();
-$(".selected-session-div").hide();
-
-loadSessionFile();
-
 initSelect("voice");
 getLEDSyncDev();
 loadSettings();
@@ -181,39 +147,9 @@ function registerEvents() {
         // an event triggerd
         overwolf.games.events.onNewEvents.addListener(function(info) {
             console.log("EVENT FIRED: " + JSON.stringify(info));
-            playVoice(info.events[0].name, 0);
-            playLed(info.events[0].name);
-            if (info.events[0].name === "damage_dealt") {
-                damage_dealt_event(info.events[0].data);
-            } else if (info.events[0].name === "killer") {
-                let data = JSON.parse(info.events[0].data)
-                killer_event(data.killer_name);
-            } else if (info.events[0].name === "matchStart") {
-                matchStart_event();
-            } else if (info.events[0].name === "knockout") {
-                knockout_event();
-            } else if (info.events[0].name === "knockedout") {
-                knockedout_event();
-            } else if (info.events[0].name === "matchEnd") {
-                matchEnd_event();
-            } else if (info.events[0].name === "matchSummary") {
-                matchSummary_event();
-            } else if (info.events[0].name === "headshot") {
-                headshot_event();
-            } else if (info.events[0].name === "kill") {
-                kill_event();
-            } else if (info.events[0].name === "revived") {
-                revived_event();
-            } else if (info.events[0].name === "death") {
-                death_event();
-            } else if (info.events[0].name === "fire") {
-                fire_event();
-            } else if (info.events[0].name === "damageTaken") {
-                damageTaken_event();
-            } else if (info.events[0].name === "jump") {
-                jump_event();
-            }
-
+            info.events.forEach((event) => {
+                eventsHandler(event);
+            });
         });
         isFeatureSet = true;
         console.log("registerEvents");
@@ -286,39 +222,8 @@ function setFeatures() {
 
 //updates for match
 function match_info_update(match_info, feature) {
-    if ("map" in match_info) {
-        $("#map").html("map: " + mapNames[match_info.map]);
-    } else if ("kills" in match_info) {
-        match.kills = match_info.kills;
-        $("#kills").html("kills: " + match_info.kills);
-    } else if ("headshots" in match_info) {
-        match.headshots = match_info.headshots;
-        $("#headshots").html("headshots: " + match_info.headshots);
-    } else if ("total_damage_dealt" in match_info) {
-        match.totalDamage = match_info.total_damage_dealt;
-        $("#total_damage_dealt").html("total damage dealt: " + match_info.total_damage_dealt);
-    } else if ("max_kill_distance" in match_info) {
-        match.maxKillDist = (match_info.max_kill_distance / 100).toFixed(2);
-        $("#max_dist").html("max kill distance: " + (match_info.max_kill_distance / 100).toFixed(2));
-    } else if ("mode" in match_info) {
-        match.mode = match_info.mode;
-        $("#mode").html("mode: " + match_info.mode);
-    } else if ("nicknames" in match_info) {
-        let data = JSON.parse(match_info.nicknames);
-        if ("team_members" in data) {
-            team = data.team_members;
-            console.log(Object.prototype.toString.call(team));
-            $("#team").html("team: " + data.team_members);
-        }
-    } else if ("total_teams" in match_info) {
-        match.rank_total = match_info.total_teams;
-    } else if ("total" in match_info) {
-        if (match.mode === "solo") {
-            match.rank_total = match_info.total;
-        }
-    } else if ("me" in match_info) {
-        match.rank_me = match_info.me;
-        if (match.rank_me === "1") {
+    if ("me" in match_info) {
+        if (match_info.rank_me === "1") {
             playVoice('win');
         }
     } else if (feature === "roster") {
@@ -327,19 +232,7 @@ function match_info_update(match_info, feature) {
 }
 
 //updates for game
-function game_info_update(game_info) {
-    if ("phase" in game_info) {
-        if (game_info.phase === "airfield") {
-            setNewMatch();
-            $("#no-live-match").hide();
-            $("#live-stats-table").show();
-        } else if (game_info.phase === "lobby") {
-            $("#live-stats-table").hide();
-            resetLiveFeed();
-            $("#no-live-match").show();
-        }
-    }
-}
+function game_info_update(game_info) {}
 
 
 /*
@@ -348,73 +241,20 @@ function game_info_update(game_info) {
  *******************************************************************
  */
 
-
-function death_event() {}
-
-function kill_event() {}
-
-function headshot_event() {}
-
-function revived_event() {}
-
-function damage_dealt_event(damage_dealt) {
-    $("#lst_dmg_dlt").html("last damage dealt: " + damage_dealt);
-    setTimeout(function() { $("#lst_dmg_dlt").html("last damage dealt: 0") }, 15000);
+function eventsHandler(event) {
+    let eventName = info.events[0].name;
+    let eventData = info.events[0].data;
+    playVoice(eventName, 0);
+    playLed(eventName);
+    if (eventName === "matchStart") {
+        matchStart_Event();
+    }
 }
 
-function killer_event(killer_name) {
-    match.killer = killer_name;
-    $("#killer").html("killer: " + killer_name);
-}
-
-function matchStart_event() {}
-
-function matchEnd_event() {}
-
-function matchSummary_event() {
-    addMatch();
-}
-
-function knockout_event() {
-    match.knockouts += 1;
-    $("#knockouts").html("knockouts: " + match.knockouts);
-}
-
-function knockedout_event() {
-    match.knockedouts += 1;
-    $("#knockedouts").html("knockedouts: " + match.knockedouts);
-}
-
-function fire_event() {}
-
-function damageTaken_event() {}
-
-function jump_event() {}
-
-function setNewMatch() {
-    match = {};
+function matchStart_Event() {
     overwolf.games.events.getInfo(function(res) {
-        match.map = res.res.match_info.map;
-        match.mode = res.res.match_info.mode;
-        $("#mode").html("mode: " + match.mode);
-        $("#map").html("map: " + mapNames[match.map]);
-        if (match.mode !== "solo") {
-            data = JSON.parse(res.res.match_info.nicknames)
-            match.team = data.team_members;
-            $("#team").html("team: " + match.team);
-            $("#team").show();
-        } else {
-            $("#team").hide();
-        }
+        console.log(res);
     });
-    match.kills = 0;
-    match.headshots = 0;
-    match.totalDamage = 0;
-    match.knockouts = 0;
-    match.knockedouts = 0;
-    $("#kills").html("kills: 0");
-    $("#knockouts").html("knockouts: " + match.knockouts);
-    $("#knockedouts").html("knockedouts: " + match.knockedouts);
 }
 
 //close app
@@ -445,154 +285,6 @@ function drag() {
     overwolf.windows.dragMove(windowId);
 }
 
-function prevMatch() {
-    mySwiper.slidePrev();
-}
-
-function nextMatch() {
-    mySwiper.slideNext();
-}
-
-//hides selected match
-function hideSession() {
-    $(".selected-session-div").hide();
-}
-
-//adds match to swiper and saves in DB
-function addMatch() {
-    match.date = getDateString();
-    matchesNum++;
-
-    match.matchName = "Match " + (matchesNum.toLocaleString('en-US', { minimumIntegerDigits: 2, useGrouping: false }));
-    if (matchesNum > 50) {
-        matches.shift();
-        mySwiper.removeSlide(0);
-    }
-    appendSlide(match);
-    matches.push(match);
-    mySwiper.slideNext();
-    saveSessionFile();
-}
-
-function getDateString() {
-    let date = new Date();
-    let str = date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear() +
-        " " + (date.getHours()).toLocaleString('en-US', { minimumIntegerDigits: 2, useGrouping: false }) + ":" + (date.getMinutes()).toLocaleString('en-US', { minimumIntegerDigits: 2, useGrouping: false });
-    return str;
-}
-
-//resets live feed after match has been end
-function resetLiveFeed() {
-    $("#map").html("map:");
-    $("#kills").html("kills: 0");
-    $("#headshots").html("headshots: 0");
-    $("#mode").html("mode:");
-    $("#team").html("team:");
-    $("#max_dist").html("max kill distance: 0");
-    $("#knockedouts").html("knockedouts: 0");
-    $("#knockouts").html("knockouts:");
-    $("#killer").html("killer:");
-    $("#playerInMatch").empty();
-    $("#live-stats-team-table").empty();
-}
-
-
-//shows clicked previuse match stats
-function showMatchSession(index) {
-    $(".selected-session-div").empty();
-    $(".selected-session-div").show();
-    $(".selected-session-div").append(`
-      <h2>` + matches[index].matchName + `</h2>
-      <div class="session-controls-group">
-        <button class="session-control" onclick="hideSession()">
-          <img class="svg-icon-fill" src="img/svg/closeB.svg" width="10", height="10">
-        </button>
-      </div>`);
-    $(".selected-session-div").append(`
-    <table style="width:100%">
-      <tr>
-          <td>map: ` + mapNames[matches[index].map] + `</td>
-          <td>kills: ` + matches[index].kills + `</td>
-      </tr>
-      <tr>
-          <td>headshots: ` + matches[index].headshots + `</td>
-          <td>total damage dealt: ` + matches[index].totalDamage + `</td>
-      </tr>
-      <tr>
-          <td>mode: ` + matches[index].mode + `</td>
-          <td id="old-session-team">team: ` + matches[index].team + `</td>
-      </tr>
-      <tr>
-          <td>max kill distance: ` + matches[index].maxKillDist + `</td>
-          <td>killer: ` + matches[index].killer + `</td>
-      </tr>
-      <tr id="old-session-knock">
-          <td>knockouts: ` + matches[index].knockouts + `</td>
-          <td>knockedouts: ` + matches[index].knockedouts + `</td>
-      </tr>
-    </table>
-  `);
-    if (matches[index].mode === "solo") {
-        $("#old-session-team").hide();
-        $("#old-session-knock").hide();
-    } else if (matches[index].team_kills !== undefined) {
-        $(".selected-session-div").append(`
-      <table style="width:100%">
-      ` + matches[index].team_kills + `
-      </table>
-    `);
-    }
-}
-
-//saves match to local DB
-function saveSessionFile() {
-    let json = JSON.stringify(matches);
-    localStorage.matches = json;
-    json = JSON.stringify(matchesNum);
-    localStorage.matchesNum = json;
-}
-
-//load all matches from local DB
-function loadSessionFile() {
-    if (localStorage.matches) {
-        let json = localStorage.matches;
-        matches = JSON.parse(json);
-        matches.forEach(element => {
-            appendSlide(element);
-        });
-        mySwiper.slideTo(matches.length - 1);
-        matchesNum = JSON.parse(localStorage.matchesNum);
-        console.log("matches been loaded");
-    } else {
-        console.log("matches is null");
-    }
-
-}
-
-function appendSlide(match) {
-    let mapIcon = "img/icons/" + match.map + ".png";
-    mySwiper.appendSlide(`
-  <div class="swiper-slide">
-    <article class="game">
-      <div class="game-avatar">
-        <img src="` + mapIcon + `" class="game-image">
-      </div>
-      <div class="game-info">
-        <p class="game-title">` + match.matchName + `</p>
-        <table>
-        <tr>
-          <td><p class="game-subtitle">Kills: ` + match.kills + `</p></td>
-          <td><p class="game-subtitle">` + match.date + `</p></td>
-        </tr>
-        <tr>
-          <td><p class="game-subtitle">Rank: ` + match.rank_me + `/` + match.rank_total + `</p></td>
-        </tr>
-        </table>
-      </div> 
-    </article>
-  </div>
-  `);
-}
 
 //save user settings
 function saveVoices() {
@@ -941,14 +633,17 @@ function getLEDSyncDev() {
     overwolf.logitech.getDevices(function(res) {
         logDev = res.devices;
         let isRGB = false;
+        let rgbDev = "";
         logDev.forEach(element => {
             if (element.lightingId == '2') {
                 isRGB = true;
+                rgbDev += ` ${element.name} ${element.typeName}`;
             }
         });
         if (isRGB) {
             $(".logitecDevLst").append(`
         <p>Here you can set Logitech devices to flash on event, for example you can set flash effects that will play each time you get a kill or get a win.<br><br></p>
+        <p>Supported devices:${rgbDev}</p>
         <table class="table">
           <tr>
             <td>
@@ -1020,16 +715,6 @@ function chkPlyrAlrt(roster) {
     let playerRos = JSON.parse(roster[names[0]]);
     if ("player" in playerRos) {
         let playerName = playerRos["player"];
-        if (match.mode !== "solo") {
-            if (playerRos["out"]) {
-                team.forEach(function(element) {
-                    if (element === playerName) {
-                        $("#live-stats-team-table").append("<tr><td>" + playerName + " has " + playerRos["kills"] + " kills</td></tr>");
-                        match.team_kills = $("#live-stats-team-table").html();
-                    }
-                });
-            }
-        }
         let lowercaseName = playerName.toLowerCase();
         playersAlert.forEach(function(element) {
             if (lowercaseName.includes(element.toLowerCase())) {
